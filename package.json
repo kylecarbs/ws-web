@@ -1,0 +1,48 @@
+{
+  "name": "ws-web",
+  "version": "1.0.1",
+  "author": {
+    "name": "Kyle Carberry",
+    "email": "kyle@carberry.com",
+    "url": "https://carberry.com"
+  },
+  "type": "commonjs",
+  "main": "./lib/websocket.js",
+  "types": "./types.d.ts",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "lib",
+    "types.d.ts"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest",
+    "browserify-zlib": "^0.2.0",
+    "buffer": "^6.0.3",
+    "html-webpack-plugin": "^5.6.3",
+    "http-browserify": "^1.7.0",
+    "https-browserify": "^1.0.0",
+    "js-sha1": "^0.7.0",
+    "path": "^0.12.7",
+    "stream-browserify": "^3.0.0",
+    "ts-loader": "^9.5.2",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.0",
+    "ws": "^8.18.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "demo": "webpack serve --config-name demo",
+    "test": "bun test ./polyfill/*.test.ts",
+    "build": "webpack --config-name ws",
+    "package": "bun run build && npm pack"
+  },
+  "dependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}
