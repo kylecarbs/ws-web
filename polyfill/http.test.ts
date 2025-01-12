@@ -1,4 +1,4 @@
-import { WebSocketHandler } from "bun";
+import { Server, WebSocketHandler } from "bun";
 import { describe, expect, test } from "bun:test";
 import { Socket, createConnection } from "net";
 import WebSocket from "../lib/websocket.js";
@@ -23,6 +23,24 @@ describe("WebSocket", () => {
       });
     });
     expect(err.message).toBe("Readable was closed");
+  });
+
+  test("http: throws error if the server doesn't handle upgrades", async () => {
+    const port = createServer(undefined, (req, server) => {
+      return new Response("Not handling upgrades", { status: 200 });
+    });
+    const ws = new WebSocket(`ws://localhost:${port}`, [], {
+      proxyStreams: (readable: ReadableStream, writable: WritableStream) => {
+        const socket = createConnection(port, "127.0.0.1");
+        pipeSocket(socket, readable, writable);
+      },
+    });
+    const err = await new Promise<Error>((resolve) => {
+      ws.on("error", (err) => {
+        resolve(err);
+      });
+    });
+    expect(err.message).toBe("Unexpected server response: 200");
   });
 
   test("http: connects and echos", async () => {
@@ -265,16 +283,22 @@ const pipeSocket = (
   };
 };
 
-const createServer = (handler?: WebSocketHandler): number => {
+const createServer = (
+  ws?: WebSocketHandler,
+  fetch?: (req: Request, server: Server) => Response
+): number => {
   const server = Bun.serve({
     port: 0,
     fetch: (req, server) => {
+      if (fetch) {
+        return fetch(req, server);
+      }
       if (server.upgrade(req)) {
         return;
       }
       return new Response("Upgrade failed!", { status: 500 });
     },
-    websocket: handler || {
+    websocket: ws || {
       message(ws, message) {
         // Echo by default.
         ws.send(message);

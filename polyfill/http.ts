@@ -60,6 +60,7 @@ export function request(options: {
   // This is a shimmed HTTP request.
   return {
     on: requestEmitter.on.bind(requestEmitter),
+    once: requestEmitter.once.bind(requestEmitter),
     end: () => {
       writer.write(createUpgradeRequest(options)).catch((err) => {
         if (err === undefined) {
@@ -71,7 +72,7 @@ export function request(options: {
     // Calls if the server responds with a non-101 or redirect code.
     // e.g. 200
     destroy: (err?: Error) => {
-      socket.destroy(err);
+      requestEmitter.emit("error", err);
     },
   };
 }
