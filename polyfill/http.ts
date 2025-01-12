@@ -68,6 +68,11 @@ export function request(options: {
         requestEmitter.emit("error", err);
       });
     },
+    // Calls if the server responds with a non-101 or redirect code.
+    // e.g. 200
+    destroy: (err?: Error) => {
+      socket.destroy(err);
+    },
   };
 }
 
