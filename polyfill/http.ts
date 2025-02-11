@@ -264,9 +264,9 @@ export function createStreamSocket(
     return null;
   };
   fakeSocket.unshift = (data: Uint8Array) => {
-    queueMicrotask(() => {
+    setTimeout(() => {
       fakeSocket.emit("data", data);
-    });
+    }, 0);
   };
 
   (async () => {
