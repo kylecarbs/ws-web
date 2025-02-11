@@ -31,7 +31,7 @@ export function request(options: {
       // took this over.
       return;
     }
-    const upgradeResponse = parseUpgradeResponse(data);
+    const upgradeResponse = parseUpgradeResponse(new Uint8Array(data));
     if (upgradeResponse instanceof Error) {
       requestEmitter.emit("error", upgradeResponse);
       return;
@@ -213,7 +213,7 @@ export function createStreamSocket(
     return fakeSocket as Socket;
   };
   // @ts-ignore
-  fakeSocket.write = (data: Uint8Array, cb) => {
+  fakeSocket.write = (data: Uint8Array, cb: any) => {
     writer
       .write(data)
       .then(() => {
@@ -262,6 +262,11 @@ export function createStreamSocket(
     // In our stream implementation, we're pushing data directly via 'data' events
     // so read() should always return null as data is already consumed
     return null;
+  };
+  fakeSocket.unshift = (data: Uint8Array) => {
+    queueMicrotask(() => {
+      fakeSocket.emit("data", data);
+    });
   };
 
   (async () => {
