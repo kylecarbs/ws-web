@@ -16,6 +16,7 @@ const base = {
       process: require.resolve("./polyfill/process.ts"),
       url: require.resolve("./polyfill/url.ts"),
 
+      assert: require.resolve("assert"),
       buffer: require.resolve("buffer"),
       stream: require.resolve("stream-browserify"),
       path: require.resolve("path"),
@@ -23,7 +24,6 @@ const base = {
 
       bufferutil: false,
       "utf-8-validate": false,
-      assert: false,
       os: false,
       util: false,
       net: false,
