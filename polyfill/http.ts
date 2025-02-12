@@ -86,14 +86,15 @@ function createUpgradeRequest(options: {
   const lines = [
     `GET ${options.path} HTTP/1.1`,
     `Host: ${options.host}:${options.port}`,
-    "Upgrade: websocket",
-    "Connection: Upgrade",
-    `Sec-WebSocket-Key: ${options.headers["Sec-WebSocket-Key"]}`,
-    `Sec-WebSocket-Version: ${options.headers["Sec-WebSocket-Version"]}`,
-    `Sec-WebSocket-Extensions: ${options.headers["Sec-WebSocket-Extensions"]}`,
-    "", // Empty line to indicate end of headers
-    "", // Final newline
   ];
+
+  Object.entries(options.headers).forEach(([key, value]) => {
+    lines.push(`${key}: ${value}`);
+  });
+
+  // Empty line to indicate end of headers.
+  // Final newline
+  lines.push("", "");
 
   return new TextEncoder().encode(lines.join("\r\n"));
 }
@@ -202,24 +203,35 @@ export function createStreamSocket(
 
     return fakeSocket as Socket;
   };
+  let corked = false;
+  let corkedQueue: Uint8Array[] = [];
+  let corkedLastCallback: any;
   fakeSocket.cork = () => {
-    // noop
+    corked = true;
   };
   fakeSocket.uncork = () => {
-    // noop
+    corked = false;
+    if (corkedQueue.length > 0) {
+      const merged = new Uint8Array(corkedQueue.reduce((p, c) => p + c.length, 0));
+      let offset = 0;
+      for (const chunk of corkedQueue) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      corkedQueue = [];
+      doWrite(merged, corkedLastCallback);
+    }
   };
   fakeSocket.resume = (): Socket => {
     // noop - there are no pauses on readable streams.
     return fakeSocket as Socket;
   };
-  // @ts-ignore
-  fakeSocket.write = (data: Uint8Array, cb: any) => {
+
+  const doWrite = (data: Uint8Array, cb?: any) => {
     writer
       .write(data)
       .then(() => {
-        if (cb) {
-          cb();
-        }
+        cb?.();
       })
       .catch((err) => {
         if (cb) {
@@ -228,6 +240,16 @@ export function createStreamSocket(
           fakeSocket.emit("error", err);
         }
       });
+  }
+
+  // @ts-ignore
+  fakeSocket.write = (data: Uint8Array, cb: any) => {
+    if (corked) {
+      corkedQueue.push(data);
+      corkedLastCallback = cb;
+      return;
+    }
+    doWrite(data, cb);
   };
   // @ts-ignore - Let our tests ensure this works.
   fakeSocket.end = function (data?: Uint8Array, cb?: () => void) {

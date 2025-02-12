@@ -299,6 +299,7 @@ const createServer = (
       return new Response("Upgrade failed!", { status: 500 });
     },
     websocket: ws || {
+      perMessageDeflate: true,
       message(ws, message) {
         // Echo by default.
         ws.send(message);
